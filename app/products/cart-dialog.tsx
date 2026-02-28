@@ -16,14 +16,22 @@ import {
 import { Card } from "@/components/ui/card";
 import { useCart } from "./cart-context";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/shared/hooks/useAuth";
 
 export function CartDialog() {
   const { items, removeFromCart, clearCart, total } = useCart();
+  const { isAuthenticated } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
   const router = useRouter();
 
   const handleCheckout = async () => {
+    if (!isAuthenticated) {
+      setShowLoginDialog(true);
+      return;
+    }
+
     if (items.length === 0) return;
 
     setIsProcessing(true);
@@ -54,6 +62,7 @@ export function CartDialog() {
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="default" className="relative">
@@ -133,5 +142,25 @@ export function CartDialog() {
         )}
       </DialogContent>
     </Dialog>
+
+    <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Inicia sesión para continuar</DialogTitle>
+          <DialogDescription>
+            Necesitas estar logueado para poder realizar la compra.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowLoginDialog(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => router.push("/login")}>
+            Ir a Login
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
