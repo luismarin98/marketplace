@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,10 +32,11 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormDialogProps {
   children: React.ReactNode;
-  onProductSave: (data: ProductFormValues) => void;
+  onProductSave: (data: ProductFormValues) => Promise<boolean>;
+  isSubmitting: boolean;
 }
 
-function ProductFormDialog({ children, onProductSave }: ProductFormDialogProps) {
+function ProductFormDialog({ children, onProductSave, isSubmitting }: ProductFormDialogProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -47,10 +48,12 @@ function ProductFormDialog({ children, onProductSave }: ProductFormDialogProps) 
     },
   });
 
-  const onSubmit = (data: ProductFormValues) => {
-    onProductSave(data);
-    form.reset();
-    setOpen(false);
+  const onSubmit = async (data: ProductFormValues) => {
+    const success = await onProductSave(data);
+    if (success) {
+      form.reset();
+      setOpen(false);
+    }
   };
 
   return (
@@ -123,7 +126,10 @@ function ProductFormDialog({ children, onProductSave }: ProductFormDialogProps) 
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit">Save Product</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save Product
+              </Button>
             </DialogFooter>
           </form>
         </Form>
@@ -135,25 +141,50 @@ function ProductFormDialog({ children, onProductSave }: ProductFormDialogProps) 
 export default function SellerDashboard() {
   const { user, loading } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSaveProduct = (productData: {
-    title: string;
-    description: string;
-    price: number;
-    stock: number;
-  }) => {
-    const newProduct = {
-      _id: Date.now().toString(), // Mock ID
-      title: productData.title,
-      description: productData.description,
-      price: productData.price,
-      stock: productData.stock,
-      sellerId: user?._id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  useEffect(() => {
+    if (user?._id) {
+      const fetchProducts = async () => {
+        try {
+          const response = await fetch(`/api/products?sellerId=${user._id}`);
+          if (response.ok) {
+            const data = await response.json();
+            setProducts(data);
+          } else {
+            console.error("Failed to fetch seller products");
+          }
+        } catch (error) {
+          console.error("Error fetching seller products:", error);
+        }
+      };
+      fetchProducts();
+    }
+  }, [user]);
 
-    setProducts((prev) => [...prev, newProduct]);
+  const handleSaveProduct = async (productData: ProductFormValues): Promise<boolean> => {
+    if (!user) return false;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...productData, sellerId: user._id }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save product');
+
+      const newProduct = await response.json();
+      setProducts((prev) => [newProduct, ...prev]);
+      return true;
+    } catch (error) {
+      console.error(error);
+      alert('There was an error saving the product.');
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -203,7 +234,7 @@ export default function SellerDashboard() {
                 ))}
               </div>
             )}
-            <ProductFormDialog onProductSave={handleSaveProduct}>
+            <ProductFormDialog onProductSave={handleSaveProduct} isSubmitting={isSubmitting}>
               <Button className="mt-4">Add product</Button>
             </ProductFormDialog>
           </CardContent>
