@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Store, BarChart3, Loader2 } from "lucide-react"; 
+import { Store, BarChart3, Loader2, ShoppingBag } from "lucide-react"; 
 import {
   Dialog,
   DialogClose,
@@ -141,6 +141,8 @@ function ProductFormDialog({ children, onProductSave, isSubmitting }: ProductFor
 export default function SellerDashboard() {
   const { user, loading } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [sales, setSales] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -158,7 +160,30 @@ export default function SellerDashboard() {
           console.error("Error fetching seller products:", error);
         }
       };
+
+      const fetchOrders = async () => {
+        try {
+          const response = await fetch(`/api/orders`);
+          if (response.ok) {
+            const data = await response.json();
+            setOrders(data);
+          }
+        } catch (error) { console.error(error); }
+      };
+
+      const fetchSales = async () => {
+        try {
+          const response = await fetch(`/api/orders?role=seller`);
+          if (response.ok) {
+            const data = await response.json();
+            setSales(data);
+          }
+        } catch (error) { console.error(error); }
+      };
+
       fetchProducts();
+      fetchOrders();
+      fetchSales();
     }
   }, [user]);
 
@@ -186,6 +211,21 @@ export default function SellerDashboard() {
       setIsSubmitting(false);
     }
   };
+
+  // Calcular métricas de ventas
+  const totalRevenue = sales.reduce((acc, order) => {
+    const orderRevenue = order.products
+      .filter((p: any) => p.sellerId === user?._id)
+      .reduce((sum: number, p: any) => sum + (p.price * p.quantity), 0);
+    return acc + orderRevenue;
+  }, 0);
+
+  const totalItemsSold = sales.reduce((acc, order) => {
+    const orderItems = order.products
+      .filter((p: any) => p.sellerId === user?._id)
+      .reduce((sum: number, p: any) => sum + p.quantity, 0);
+    return acc + orderItems;
+  }, 0);
 
   if (loading) {
     return (
@@ -251,9 +291,87 @@ export default function SellerDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Sales data will appear here once you start selling.
-            </p>
+            {sales.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Sales data will appear here once you start selling.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="rounded-lg border p-3 bg-primary/5">
+                    <p className="text-xs text-muted-foreground uppercase font-bold">Total Revenue</p>
+                    <p className="text-2xl font-bold text-primary">${totalRevenue.toFixed(2)}</p>
+                  </div>
+                  <div className="rounded-lg border p-3 bg-primary/5">
+                    <p className="text-xs text-muted-foreground uppercase font-bold">Items Sold</p>
+                    <p className="text-2xl font-bold text-primary">{totalItemsSold}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Recent Sales</p>
+                  <div className="max-h-[200px] overflow-y-auto pr-2 space-y-2">
+                    {sales.map((sale) => (
+                      <div key={sale._id} className="text-sm border-b pb-2 last:border-0">
+                         <div className="flex justify-between">
+                           <span className="text-muted-foreground">{new Date(sale.createdAt).toLocaleDateString()}</span>
+                           <span className="font-medium text-green-600">
+                             +${sale.products
+                                .filter((p: any) => p.sellerId === user?._id)
+                                .reduce((sum: number, p: any) => sum + (p.price * p.quantity), 0)
+                                .toFixed(2)}
+                           </span>
+                         </div>
+                         <div className="text-xs text-muted-foreground mt-1">
+                            {sale.products
+                              .filter((p: any) => p.sellerId === user?._id)
+                              .map((p: any) => `${p.quantity}x ${p.title}`)
+                              .join(", ")}
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border">
+          <CardHeader className="flex flex-row items-center gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <ShoppingBag className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">My Purchases</CardTitle>
+              <CardDescription>History of bought items</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {orders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                You haven't purchased anything yet.
+              </p>
+            ) : (
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                {orders.map((order) => (
+                  <div key={order._id} className="rounded-lg border p-3 text-sm">
+                    <div className="flex justify-between items-center mb-2 border-b pb-2">
+                      <span className="text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <span className="font-bold text-green-600">${order.totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {order.products.map((p: any, i: number) => (
+                        <div key={i} className="flex justify-between">
+                          <span className="line-clamp-1 max-w-[70%]">{p.title}</span>
+                          <span className="text-muted-foreground">x{p.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

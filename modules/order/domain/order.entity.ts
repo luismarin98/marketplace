@@ -8,6 +8,9 @@ export enum OrderStatus {
 export interface IOrderProduct {
   productId: ObjectId;
   quantity: number;
+  title: string;
+  price: number;
+  sellerId: ObjectId;
 }
 
 export interface IOrder {

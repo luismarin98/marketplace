@@ -28,7 +28,11 @@ async function getClient(): Promise<MongoClient> {
   }
 
   if (!cached.promise) {
-    cached.promise = new MongoClient(MONGODB_URI!).connect();
+    cached.promise = new MongoClient(MONGODB_URI!).connect().catch((e) => {
+      cached.promise = null;
+      console.error("Error connecting to MongoDB:", e);
+      throw e;
+    });
   }
 
   try {

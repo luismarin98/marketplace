@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,24 @@ import { ShoppingCart, Package, Loader2 } from "lucide-react";
 
 export default function BuyerDashboard() {
   const { user, loading } = useAuth();
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      const fetchOrders = async () => {
+        try {
+          const response = await fetch('/api/orders');
+          if (response.ok) {
+            const data = await response.json();
+            setOrders(data);
+          }
+        } catch (error) {
+          console.error("Error fetching orders:", error);
+        }
+      };
+      fetchOrders();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -39,12 +58,35 @@ export default function BuyerDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No orders yet. Start browsing products to place your first order.
-            </p>
-            <Button variant="outline" className="mt-4" asChild>
-              <a href="/products">Browse products</a>
-            </Button>
+            {orders.length === 0 ? (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  No orders yet. Start browsing products to place your first order.
+                </p>
+                <Button variant="outline" className="mt-4" asChild>
+                  <a href="/products">Browse products</a>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                {orders.map((order) => (
+                  <div key={order._id} className="rounded-lg border p-3 text-sm">
+                    <div className="flex justify-between items-center mb-2 border-b pb-2">
+                      <span className="text-muted-foreground">{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <span className="font-bold text-green-600">${order.totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {order.products.map((p: any, i: number) => (
+                        <div key={i} className="flex justify-between">
+                          <span className="line-clamp-1 max-w-[70%]">{p.title}</span>
+                          <span className="text-muted-foreground">x{p.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

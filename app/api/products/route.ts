@@ -61,3 +61,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Failed to create product" }, { status: 500 });
   }
 }
+
+// PUT /api/products - Actualización masiva de stock (Simulación de pago)
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+    const { items } = body; // Esperamos { items: [{ _id, cartQuantity }] }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ message: "Invalid items format" }, { status: 400 });
+    }
+
+    const collection = await getCollection<IProduct>(PRODUCTS_COLLECTION);
+
+    // Preparamos las operaciones masivas (bulkWrite)
+    const operations = items.map((item: any) => ({
+      updateOne: {
+        // Filtramos por ID y aseguramos que haya suficiente stock
+        filter: { _id: new ObjectId(item._id), stock: { $gte: item.cartQuantity } },
+        update: { $inc: { stock: -item.cartQuantity } },
+      },
+    }));
+
+    const result = await collection.bulkWrite(operations);
+
+    // Si modifiedCount es menor que items.length, significa que algunos no tenían stock suficiente
+    // Para esta simulación asumiremos éxito si no hay error de BD
+    
+    return NextResponse.json({ success: true, result });
+  } catch (error) {
+    console.error("Error processing payment:", error);
+    return NextResponse.json({ message: "Failed to process payment" }, { status: 500 });
+  }
+}

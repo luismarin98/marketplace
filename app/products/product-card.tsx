@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PackageSearch, ShoppingCart, Minus, Plus } from "lucide-react";
@@ -12,16 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { IProduct } from "@/modules/product/domain/product.entity";
-
-// Definimos una interfaz para la UI donde los ObjectId y Fechas son strings
-export type ProductUI = Omit<IProduct, "_id" | "sellerId" | "createdAt" | "updatedAt"> & {
-  _id: string;
-  sellerId: string;
-  createdAt: string;
-  updatedAt: string;
-};
+} from "@/components/ui/dialog"; 
+import { ProductUI, useCart } from "./cart-context";
 
 interface ProductCardProps {
   product: ProductUI;
@@ -29,9 +21,25 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
+  const { addToCart, items } = useCart();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Calculamos el stock disponible restando lo que ya está en el carrito
+  const cartItem = items.find((item) => item._id === product._id);
+  const quantityInCart = cartItem ? cartItem.cartQuantity : 0;
+  const availableStock = Math.max(0, product.stock - quantityInCart);
+
+  // Ajustamos la cantidad seleccionada si supera el stock disponible al abrir o cambiar
+  useEffect(() => {
+    if (isOpen) {
+      if (availableStock === 0) setQuantity(0);
+      else if (quantity > availableStock) setQuantity(availableStock);
+      else if (quantity === 0 && availableStock > 0) setQuantity(1);
+    }
+  }, [isOpen, availableStock, quantity]);
 
   const handleIncrement = () => {
-    if (quantity < product.stock) setQuantity((q) => q + 1);
+    if (quantity < availableStock) setQuantity((q) => q + 1);
   };
 
   const handleDecrement = () => {
@@ -48,7 +56,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <p className="text-2xl font-bold">${product.price.toFixed(2)}</p>
       </CardContent>
       <CardFooter>
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button className="w-full" variant="outline">
               <PackageSearch className="mr-2 h-4 w-4" /> Ver Detalles
@@ -79,7 +87,12 @@ export function ProductCard({ product }: ProductCardProps) {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium">Stock Disponible</p>
-                  <p className="text-sm text-muted-foreground">{product.stock} unidades</p>
+                  <p className="text-sm text-muted-foreground">{availableStock} unidades</p>
+                  {quantityInCart > 0 && (
+                    <p className="text-xs text-blue-600 font-medium">
+                      (Tienes {quantityInCart} en el carrito)
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -90,11 +103,15 @@ export function ProductCard({ product }: ProductCardProps) {
                     <Minus className="h-3 w-3" />
                   </Button>
                   <span className="w-12 text-center font-medium text-sm">{quantity}</span>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleIncrement} disabled={quantity >= product.stock}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleIncrement} disabled={quantity >= availableStock}>
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                <Button className="flex-1" onClick={() => alert(`Agregado ${quantity} ${product.title} al carrito`)}>
+                <Button className="flex-1" onClick={() => {
+                  addToCart(product, quantity);
+                  setIsOpen(false);
+                  setQuantity(1);
+                }} disabled={availableStock === 0 || quantity === 0}>
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Agregar al Carrito
                 </Button>
