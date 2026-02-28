@@ -31,7 +31,7 @@ export function Navbar() {
             href="/products"
             className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Products
+            Productos
           </Link>
 
           {loading ? (
@@ -60,7 +60,7 @@ export function Navbar() {
                   <DropdownMenuItem>
                     <Link href="/profile" className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      Profile
+                      Perfil
                     </Link>
                     
                   </DropdownMenuItem>
@@ -70,7 +70,7 @@ export function Navbar() {
                     className="flex items-center gap-2 text-destructive focus:text-destructive"
                   >
                     <LogOut className="h-4 w-4" />
-                    Log out
+                    Cerrar sesion
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -78,10 +78,10 @@ export function Navbar() {
           ) : (
             <div className="flex items-center gap-3">
               <Button variant="ghost" asChild>
-                <Link href="/login">Log in</Link>
+                <Link href="/login">Iniciar sesion</Link>
               </Button>
               <Button asChild>
-                <Link href="/register">Get started</Link>
+                <Link href="/register">Registrate</Link>
               </Button>
             </div>
           )}
@@ -108,7 +108,7 @@ export function Navbar() {
               className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               onClick={() => setMobileOpen(false)}
             >
-              Products
+              Productos
             </Link>
             {isAuthenticated && user ? (
               <>
@@ -126,7 +126,7 @@ export function Navbar() {
                   }}
                   className="rounded-md px-3 py-2 text-left text-sm font-medium text-destructive hover:bg-accent"
                 >
-                  Log out
+                  Cerrar sesion
                 </button>
               </>
             ) : (
@@ -136,14 +136,14 @@ export function Navbar() {
                   className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Log in
+                  Logueate
                 </Link>
                 <Link
                   href="/register"
                   className="rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Get started
+                  Registrate!
                 </Link>
               </>
             )}

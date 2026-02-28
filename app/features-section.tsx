@@ -4,21 +4,21 @@ import { ShieldCheck, Zap, Users } from "lucide-react";
 const features = [
   {
     icon: ShieldCheck,
-    title: "Secure Transactions",
+    title: "Transacciones Seguras",
     description:
-      "Every transaction is protected with encrypted payments and buyer/seller verification.",
+      "Cada transacción está protegida con pagos encriptados y verificación de comprador/vendedor.",
   },
   {
     icon: Zap,
-    title: "Quick Listing",
+    title: "Publicación Rápida",
     description:
-      "List your products in seconds with our streamlined seller tools and dashboard.",
+      "Publica tus productos en segundos con nuestras herramientas optimizadas para vendedores.",
   },
   {
     icon: Users,
-    title: "Trusted Community",
+    title: "Comunidad de Confianza",
     description:
-      "Join thousands of verified buyers and sellers in a marketplace built on trust.",
+      "Únete a miles de compradores y vendedores verificados en un mercado basado en la confianza.",
   },
 ];
 
@@ -28,10 +28,10 @@ export function FeaturesSection() {
       <div className="mx-auto max-w-7xl px-4 md:px-6">
         <div className="mb-14 text-center">
           <h2 className="text-balance text-3xl font-bold tracking-tight text-foreground md:text-4xl">
-            Everything you need to trade online
+            Todo lo que necesitas para comerciar en línea
           </h2>
           <p className="mt-4 text-pretty text-lg text-muted-foreground">
-            A complete platform for both buyers and sellers.
+            Una plataforma completa tanto para compradores como para vendedores.
           </p>
         </div>
         <div className="grid gap-6 md:grid-cols-3">
