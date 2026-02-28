@@ -12,7 +12,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Marketplace - Buy & Sell with Confidence',
   description: 'A secure online marketplace connecting buyers and sellers. List your products or find exactly what you need.',
-  generator: 'v0.app',
+  generator: 'Luis Marin',
   icons: {
     icon: [
       {

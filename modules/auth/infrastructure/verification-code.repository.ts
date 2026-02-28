@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { Filter, ObjectId } from "mongodb";
 import { getCollection, ensureIndexes } from "@/lib/mongodb";
 import type { IVerificationCode } from "@/modules/auth/domain/verification-code.entity";
 import { VERIFICATION_CODES_COLLECTION } from "@/modules/auth/domain/verification-code.entity";
@@ -38,12 +38,16 @@ export class VerificationCodeRepository {
     code: string
   ): Promise<IVerificationCode | null> {
     const col = await this.collection();
-    return col.findOne({
+
+    // Definimos el filtro usando el tipo Filter de MongoDB
+    const query: Filter<IVerificationCode> = {
       userId: new ObjectId(userId),
       code,
       used: false,
-      expiresAt: { $gt: new Date() },
-    } as Partial<IVerificationCode>);
+      expiresAt: { $gt: new Date() }, // ¡Ahora TypeScript entenderá el $gt!
+    };
+
+    return col.findOne(query);
   }
 
   async markAsUsed(id: string): Promise<void> {
