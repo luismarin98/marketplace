@@ -9,6 +9,13 @@ La aplicación se centra en tres pilares fundamentales:
 2. **Publicación Rápida**: Herramientas optimizadas para que los vendedores publiquen productos en segundos.
 3. **Comunidad de Confianza**: Un ecosistema de usuarios verificados.
 
+### ✨ Funcionalidades Recientes
+- **Búsqueda y Filtrado**: Sistema de búsqueda por texto y filtrado por vendedor en el catálogo.
+- **Carrito de Compras**: Gestión de estado de carrito y simulación de pago con validación de stock.
+- **API RESTful**: Endpoints robustos (`/api/products`) para operaciones CRUD y actualizaciones masivas (BulkWrite).
+- **Sistema de Auditoría**: Integración con **Sentinel** para registro de eventos (búsquedas, transacciones).
+- **UI Interactiva**: Componentes modernos para Términos y Condiciones (Dialogs, Accordions).
+
 ## 🚀 Tecnologías y Librerías
 
 Este proyecto se apoya en un ecosistema robusto de **software de código abierto**, garantizando flexibilidad, seguridad y soporte comunitario:
@@ -34,10 +41,11 @@ A continuación se muestra la estructura general del proyecto (basada en la arqu
 ```text
 ProyectoNewman2/
 ├── app/                    # Rutas y páginas de la aplicación (App Router)
-│   ├── features-section.tsx # Sección de características (Componente)
-│   ├── products/           # Módulo de productos (Catálogo)
+│   ├── api/                # Endpoints de API (Backend Next.js)
+│   ├── products/           # Módulo de productos (Catálogo, Búsqueda, Carrito)
 │   ├── layout.tsx          # Layout principal
 │   └── page.tsx            # Página de inicio
+├── shared/                 # Componentes compartidos (Footer, Header)
 ├── components/             # Componentes reutilizables
 │   └── ui/                 # Componentes base de UI (Cards, Buttons, etc.)
 ├── public/                 # Archivos estáticos (imágenes, fuentes)
@@ -51,6 +59,7 @@ Las rutas principales de la aplicación son:
 
 - `/`: **Inicio (Landing Page)** - Muestra la propuesta de valor y secciones principales (incluyendo la sección de características).
 - `/products`: **Catálogo de Productos** - Listado dinámico de productos disponibles con gestión de stock y carrito de compras.
+- `/api/products`: **API Endpoint** - Soporta obtención de productos (con filtros), creación y actualización de stock (simulación de pago).
 - *(Rutas sugeridas/pendientes de confirmar según el desarrollo)*:
   - `/login`: Autenticación de usuarios.
   - `/dashboard`: Panel de control para vendedores.
