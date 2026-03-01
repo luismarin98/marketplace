@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextFetchEvent } from "next/server";
 import { jwtVerify } from "jose";
+import { logToSentinel } from "./lib/sentinel";
 
 const PUBLIC_PATHS = [
   "/",
@@ -21,8 +22,13 @@ function isPublicPath(pathname: string): boolean {
   return false;
 }
 
-export async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname } = request.nextUrl;
+
+  // Centinela: Log interaction (ensure /api is logged, skip static files)
+  if (pathname.startsWith("/api") || (!pathname.startsWith("/_next") && !pathname.startsWith("/favicon") && !pathname.includes("."))) {
+    event.waitUntil(logToSentinel(request));
+  }
 
   // Allow public paths
   if (isPublicPath(pathname)) {

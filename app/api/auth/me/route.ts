@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/jwt";
 import { UserRepository } from "@/modules/auth/infrastructure/user.repository";
+import { logToSentinel } from "@/lib/sentinel";
 
 const userRepo = new UserRepository();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
@@ -26,6 +27,12 @@ export async function GET() {
         { status: 404 }
       );
     }
+
+    await logToSentinel(request, {
+      action: "get_me",
+      userId: user._id.toString(),
+      role: user.role,
+    });
 
     return NextResponse.json({
       success: true,

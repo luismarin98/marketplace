@@ -5,6 +5,8 @@ import {
   IProduct,
   PRODUCTS_COLLECTION,
 } from "@/modules/product/domain/product.entity";
+import { logToSentinel } from "@/lib/sentinel";
+ 
 
 // GET /api/products?sellerId=...
 export async function GET(request: NextRequest) {
@@ -29,6 +31,12 @@ export async function GET(request: NextRequest) {
     }
 
     const products = await collection.find(query).sort({ createdAt: -1 }).toArray();
+    
+    // Log de búsqueda si hay filtros
+    if (search || sellerId) {
+      await logToSentinel(request, { action: "search_products", filters: { sellerId, search }, resultCount: products.length });
+    }
+
     return NextResponse.json(products);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Argument passed in must be a string")) {
@@ -67,6 +75,9 @@ export async function POST(request: Request) {
     const result = await collection.insertOne(newProduct as IProduct);
     const createdProduct = await collection.findOne({ _id: result.insertedId });
 
+    // Log de creación de producto
+    await logToSentinel(request, { action: "create_product", productId: result.insertedId, title });
+
     return NextResponse.json(createdProduct, { status: 201 });
   } catch (error) {
     console.error("Error creating product:", error);
@@ -99,6 +110,9 @@ export async function PUT(request: Request) {
 
     // Si modifiedCount es menor que items.length, significa que algunos no tenían stock suficiente
     // Para esta simulación asumiremos éxito si no hay error de BD
+    
+    // Log de actualización de stock (compra)
+    await logToSentinel(request, { action: "update_stock_payment", itemsCount: items.length, result });
     
     return NextResponse.json({ success: true, result });
   } catch (error) {

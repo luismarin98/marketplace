@@ -5,6 +5,7 @@ import { getCollection } from "@/lib/mongodb";
 import { IOrder, ORDERS_COLLECTION, OrderStatus } from "@/modules/order/domain/order.entity";
 import { IProduct, PRODUCTS_COLLECTION } from "@/modules/product/domain/product.entity";
 import { verifyToken } from "@/lib/jwt";
+import { logToSentinel } from "@/lib/sentinel";
 
 // GET /api/orders - Obtener historial de compras del usuario
 export async function GET(request: NextRequest) {
@@ -34,6 +35,13 @@ export async function GET(request: NextRequest) {
       .find(query)
       .sort({ createdAt: -1 })
       .toArray();
+
+    await logToSentinel(request, {
+      action: "fetch_orders",
+      userId,
+      role: role || "buyer",
+      resultCount: orders.length,
+    });
 
     return NextResponse.json(orders);
   } catch (error) {
@@ -113,6 +121,14 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await ordersCollection.insertOne(newOrder as IOrder);
+
+    await logToSentinel(request, {
+      action: "create_order",
+      userId,
+      orderId: result.insertedId,
+      totalAmount,
+      itemsCount: items.length,
+    });
 
     return NextResponse.json({ success: true, orderId: result.insertedId }, { status: 201 });
 

@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { forgotPasswordUseCase } from "@/modules/auth/application/forgotPassword.usecase";
+import { logToSentinel } from "@/lib/sentinel";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     await forgotPasswordUseCase(body);
+
+    await logToSentinel(request, {
+      action: "forgot_password",
+      email: body.email,
+    });
+
     // Always return success to prevent email enumeration
     return NextResponse.json(
       { success: true, message: "If an account exists with that email, a verification code has been sent." },
