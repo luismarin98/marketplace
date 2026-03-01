@@ -7,7 +7,7 @@ import * as z from "zod";
 import { useAuth } from "@/shared/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Store, BarChart3, Loader2, ShoppingBag } from "lucide-react"; 
+import { Store, BarChart3, Loader2, ShoppingBag, Pencil } from "lucide-react"; 
 import {
   Dialog,
   DialogClose,
@@ -32,11 +32,12 @@ type ProductFormValues = z.infer<typeof productSchema>;
 
 interface ProductFormDialogProps {
   children: React.ReactNode;
+  productToEdit?: any;
   onProductSave: (data: ProductFormValues) => Promise<boolean>;
   isSubmitting: boolean;
 }
 
-function ProductFormDialog({ children, onProductSave, isSubmitting }: ProductFormDialogProps) {
+function ProductFormDialog({ children, productToEdit, onProductSave, isSubmitting }: ProductFormDialogProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -47,6 +48,17 @@ function ProductFormDialog({ children, onProductSave, isSubmitting }: ProductFor
       stock: 0,
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        title: productToEdit?.title || "",
+        description: productToEdit?.description || "",
+        price: productToEdit?.price || 0,
+        stock: productToEdit?.stock || 0,
+      });
+    }
+  }, [open, productToEdit, form]);
 
   const onSubmit = async (data: ProductFormValues) => {
     const success = await onProductSave(data);
@@ -61,9 +73,9 @@ function ProductFormDialog({ children, onProductSave, isSubmitting }: ProductFor
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add a new product</DialogTitle>
+          <DialogTitle>{productToEdit ? "Edit Product" : "Add a new product"}</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new product to your store.
+            {productToEdit ? "Make changes to your product here." : "Fill in the details below to add a new product to your store."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -128,7 +140,7 @@ function ProductFormDialog({ children, onProductSave, isSubmitting }: ProductFor
               </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Product
+                {productToEdit ? "Save Changes" : "Save Product"}
               </Button>
             </DialogFooter>
           </form>
@@ -212,6 +224,34 @@ export default function SellerDashboard() {
     }
   };
 
+  const handleUpdateProduct = async (productId: string, productData: ProductFormValues): Promise<boolean> => {
+    if (!user) return false;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...productData, sellerId: user._id }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update product' }));
+        throw new Error(errorData.message || 'Failed to update product');
+      }
+
+      const updatedProduct = await response.json();
+      setProducts((prev) => prev.map((p) => (p._id === productId ? updatedProduct : p)));
+      return true;
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : 'An unknown error occurred while updating the product.');
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Calcular métricas de ventas
   const totalRevenue = sales.reduce((acc, order) => {
     const orderRevenue = order.products
@@ -270,6 +310,16 @@ export default function SellerDashboard() {
                       <p className="font-medium">{product.title}</p>
                       <p className="text-sm text-muted-foreground">${product.price} • Stock: {product.stock}</p>
                     </div>
+                    <ProductFormDialog
+                      productToEdit={product}
+                      onProductSave={(data) => handleUpdateProduct(product._id, data)}
+                      isSubmitting={isSubmitting}
+                    >
+                      <Button variant="outline" size="sm">
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                      </Button>
+                    </ProductFormDialog>
                   </div>
                 ))}
               </div>
