@@ -10,11 +10,23 @@ import {
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const sellerId = searchParams.get("sellerId");
+  const search = searchParams.get("search");
 
   try {
     const collection = await getCollection<IProduct>(PRODUCTS_COLLECTION);
 
-    const query = sellerId ? { sellerId: new ObjectId(sellerId) } : {};
+    const query: any = {};
+
+    if (sellerId) {
+      query.sellerId = new ObjectId(sellerId);
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
 
     const products = await collection.find(query).sort({ createdAt: -1 }).toArray();
     return NextResponse.json(products);

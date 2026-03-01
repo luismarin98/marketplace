@@ -3,14 +3,31 @@ import { IProduct, PRODUCTS_COLLECTION } from "@/modules/product/domain/product.
 import { ProductCard } from "./product-card"; 
 import { CartProvider } from "./cart-context";
 import { CartDialog } from "./cart-dialog";
+import { SearchBar } from "./search-bar";
 
 // Forzamos que esta página sea dinámica para que siempre traiga los datos frescos de la BD
 export const dynamic = "force-dynamic";
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const search = typeof params.search === "string" ? params.search : undefined;
+
   // 1. Conexión a la base de datos y obtención de productos
   const collection = await getCollection<IProduct>(PRODUCTS_COLLECTION);
-  const productsData = await collection.find({ stock: { $gt: 0 } }).sort({ createdAt: -1 }).toArray();
+  
+  const query: any = { stock: { $gt: 0 } };
+  if (search) {
+    query.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const productsData = await collection.find(query).sort({ createdAt: -1 }).toArray();
 
   // 2. Transformación de datos (ObjectId/Date -> String) para pasar al Client Component
   const products = productsData.map((p) => ({
@@ -31,7 +48,10 @@ export default async function ProductsPage() {
               Explora todos los productos disponibles en el mercado
             </p>
           </div>
-          <CartDialog />
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <SearchBar />
+            <CartDialog />
+          </div>
         </div>
         
         {products.length === 0 ? (
